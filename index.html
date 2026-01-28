@@ -10,6 +10,7 @@
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
         .main-wrapper { display: flex; gap: 20px; max-width: 1600px; margin: auto; align-items: flex-start; }
         
+        /* Колонки */
         .column { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 400px; }
         .col-left { flex: 2; }
         .col-mid { flex: 1; position: sticky; top: 20px; }
@@ -40,11 +41,28 @@
         .link-url { color: #888; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
         
         .copy-btn { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
-        .copy-btn:hover { background: #ddd; }
 
         .astral-box { margin-top: 10px; padding: 10px; border: 1px solid #cfe2ff; border-radius: 4px; background: #f8faff; }
         .gen-row { margin: 10px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-        #passResult { width: 100%; margin-top: 10px; font-family: monospace; font-weight: bold; text-align: center; background: #e9ecef; padding: 12px; border-radius: 4px; cursor: pointer; border: 1px dashed #6c757d; }
+
+        /* ИСПРАВЛЕННОЕ ПОЛЕ ПАРОЛЯ */
+        .gen-btn { width: 100%; padding: 10px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; box-sizing: border-box; }
+        #passResult { 
+            width: 100%; 
+            height: 40px; /* Такая же высота, как у кнопок */
+            margin-top: 10px; 
+            font-family: monospace; 
+            font-weight: bold; 
+            text-align: center; 
+            background: #e9ecef; 
+            border: 1px dashed #6c757d; 
+            border-radius: 4px; 
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box; /* Чтобы padding не раздувал размер */
+        }
 
         pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; max-height: 250px; }
     </style>
@@ -75,9 +93,9 @@
         <details class="tool-section">
             <summary>Настройки ОФД</summary>
             <div style="padding: 10px 0;">
-                <div id="ofdLinksContainer" class="links-list" style="margin-bottom:10px;">Загрузка настроек...</div>
+                <div id="ofdLinksContainer" class="links-list" style="margin-bottom:10px;">Загрузка...</div>
                 
-                <button onclick="toggleAstral()" style="width:100%; padding:8px; cursor:pointer; background:#6c757d; color:white; border:none; border-radius:4px;">Показать данные Астрал Софт</button>
+                <button onclick="toggleAstral()" style="width:100%; padding:8px; cursor:pointer;">Показать данные Астрал Софт</button>
                 <div id="astralBox" class="astral-box" style="display:none;">
                     <p style="font-size:12px; margin:0 0 10px 0;">ИНН: <b>4027145240</b> <button class="copy-btn" onclick="copyText('4027145240', this)">📋</button></p>
                     <select id="staffSelect" style="width:100%;" onchange="showStaffEmail()">
@@ -104,7 +122,7 @@
                 <div class="gen-row"><input type="checkbox" id="genUpper" checked> ABC</div>
                 <div class="gen-row"><input type="checkbox" id="genNum" checked> 123</div>
                 <div class="gen-row"><input type="checkbox" id="genSym"> !@#</div>
-                <button onclick="generatePass()" style="width:100%; padding:10px; cursor:pointer; background:#28a745; color:white; border:none; border-radius:4px; font-weight:bold;">Создать пароль</button>
+                <button class="gen-btn" onclick="generatePass()">Создать пароль</button>
                 <div id="passResult" onclick="copyPass()">****</div>
             </div>
         </details>
@@ -112,16 +130,15 @@
 </div>
 
 <script>
-    // --- ЗАГРУЗКА ДАННЫХ ---
     async function initAll() {
         loadLinks(GOOGLE_SHEET_CSV_URL, 'linksContainer');
-        loadLinks(OFD_CONFIG_CSV_URL, 'ofdLinksContainer'); // Загрузка настроек ОФД
+        loadLinks(OFD_CONFIG_CSV_URL, 'ofdLinksContainer');
         loadStaff();
     }
 
     async function loadLinks(url, targetId) {
         const container = document.getElementById(targetId);
-        if (!url) { container.innerHTML = "Ссылка не задана"; return; }
+        if (!url) return;
         try {
             const response = await fetch(url);
             const data = await response.text();
@@ -136,7 +153,7 @@
                     <button class="copy-btn" onclick="copyText('${val}', this)">📋</button>
                 </div>`;
             }).join('');
-        } catch(e) { container.innerHTML = "Ошибка связи"; }
+        } catch(e) { container.innerHTML = "Ошибка загрузки"; }
     }
 
     let staffData = [];
@@ -161,7 +178,6 @@
         } catch(e) {}
     }
 
-    // --- ЛОГИКА ИНТЕРФЕЙСА ---
     function toggleAstral() {
         const box = document.getElementById('astralBox');
         box.style.display = box.style.display === 'none' ? 'block' : 'none';
@@ -170,7 +186,7 @@
     function showStaffEmail() {
         const email = document.getElementById('staffSelect').value;
         const res = document.getElementById('staffEmailResult');
-        res.innerHTML = email ? `Почта: <b id="targetEmail">${email}</b> <button class="copy-btn" onclick="copyText('${email}', this)">📋</button>` : "";
+        res.innerHTML = email ? `Почта: <b>${email}</b> <button class="copy-btn" onclick="copyText('${email}', this)">📋</button>` : "";
     }
 
     function copyText(text, btn) {
