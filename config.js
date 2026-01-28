@@ -1,1 +1,2 @@
 const API_KEY = "1e72b6fad742701b3a642bc189774e34e2ae7593";
+const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqJ9p-dcqX0pAEGcyV5qDvNx9N2ui4yS9Jtl9SstbDsao4MYgfB-pRo9OkexoTUlBxUjIvVxsGDO4D/pub?gid=0&single=true&output=csv";
