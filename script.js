@@ -19,18 +19,14 @@ async function loadLinks(url, targetId) {
             const name = cols[0].replace(/"/g, '').trim();
             const val = cols[1].replace(/"/g, '').trim();
             
-            // Проверяем: файл или ссылка. 
-            // Добавил проверку на "export=download" для ссылок с Google Drive
-            const isFile = /\.(pdf|docx|doc|zip|rar|xlsx|txt|jpg|png)$/i.test(val) || val.includes('export=download');
+            // ЛОГИКА ОПРЕДЕЛЕНИЯ:
+            // Если в ссылке есть "export=download", значит это файл с Google Диска
+            const isDownloadable = val.includes('export=download');
             
-            let actionBtn = '';
-            if (isFile) {
-                // Если файл — кнопка СКАЧАТЬ
-                actionBtn = `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать">📥</a>`;
-            } else {
-                // Если ссылка — кнопка ОТКРЫТЬ
-                actionBtn = `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть">🔗</a>`;
-            }
+            // Формируем нужную кнопку действия
+            const actionBtn = isDownloadable 
+                ? `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать файл">📥</a>`
+                : `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть ссылку">🔗</a>`;
 
             return `
                 <div class="link-item">
