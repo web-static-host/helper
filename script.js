@@ -19,22 +19,27 @@ async function loadLinks(url, targetId) {
             const name = cols[0].replace(/"/g, '').trim();
             const val = cols[1].replace(/"/g, '').trim();
             
-            // Проверка: файл это или веб-ссылка
-            const isFile = /\.(pdf|docx|doc|zip|rar|xlsx|txt|jpg|png)$/i.test(val);
+            // Проверяем: файл или ссылка. 
+            // Добавил проверку на "export=download" для ссылок с Google Drive
+            const isFile = /\.(pdf|docx|doc|zip|rar|xlsx|txt|jpg|png)$/i.test(val) || val.includes('export=download');
             
-            // Если это файл, добавляем атрибут download, иначе target="_blank"
-            const linkAction = isFile ? `download` : `target="_blank"`;
-            const icon = isFile ? '📥' : '🔗';
-            const btnText = isFile ? 'Скачать' : 'Открыть';
+            let actionBtn = '';
+            if (isFile) {
+                // Если файл — кнопка СКАЧАТЬ
+                actionBtn = `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать">📥</a>`;
+            } else {
+                // Если ссылка — кнопка ОТКРЫТЬ
+                actionBtn = `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть">🔗</a>`;
+            }
 
             return `
                 <div class="link-item">
                     <div class="link-info">
-                        <a href="${val}" ${linkAction} class="link-name" style="text-decoration:none; color:inherit;">${name}</a>
+                        <span class="link-name">${name}</span>
                         <span class="link-url">${val}</span>
                     </div>
                     <div style="display:flex; gap:5px;">
-                        <a href="${val}" ${linkAction} class="copy-btn" style="text-decoration:none;" title="${btnText}">${icon}</a>
+                        ${actionBtn}
                         <button class="copy-btn" onclick="copyText('${val}', this)" title="Копировать ссылку">📋</button>
                     </div>
                 </div>`;
