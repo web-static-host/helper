@@ -13,26 +13,28 @@ async function loadLinks(url, targetId) {
         const data = await response.text();
         const rows = data.split(/\r?\n/).slice(1);
         container.innerHTML = rows.map(row => {
-            const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^**"]*$)/);
             if (cols.length < 2) return '';
             
             const name = cols[0].replace(/"/g, '').trim();
             const val = cols[1].replace(/"/g, '').trim();
             
-            // ЛОГИКА ОПРЕДЕЛЕНИЯ:
-            // Если в ссылке есть "export=download", значит это файл с Google Диска
+            // Определяем, файл это или ссылка
             const isDownloadable = val.includes('export=download');
             
-            // Формируем нужную кнопку действия
+            // Формируем кнопку действия (Скачать или Открыть)
             const actionBtn = isDownloadable 
                 ? `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать файл">📥</a>`
                 : `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть ссылку">🔗</a>`;
+
+            // Условие для отображения текста ссылки: если файл, то скрываем (display: none)
+            const urlDisplay = isDownloadable ? 'display: none;' : '';
 
             return `
                 <div class="link-item">
                     <div class="link-info">
                         <span class="link-name">${name}</span>
-                        <span class="link-url">${val}</span>
+                        <span class="link-url" style="${urlDisplay}">${val}</span>
                     </div>
                     <div style="display:flex; gap:5px;">
                         ${actionBtn}
