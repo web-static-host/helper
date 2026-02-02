@@ -5,67 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Помощник технаря</title>
     <link rel="icon" type="image/png" href="icon.png">
+    
+    <link rel="stylesheet" href="style.css">
     <script src="config.js"></script>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
-        .main-wrapper { display: flex; gap: 20px; max-width: 1600px; margin: auto; align-items: flex-start; }
-        
-        /* Колонки */
-        .column { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 400px; }
-        .col-left { flex: 2; }
-        .col-mid { flex: 1; position: sticky; top: 20px; }
-        .col-right { flex: 1; position: sticky; top: 20px; }
-
-        h2 { margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-        
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
-        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        input[type="text"] { flex-grow: 1; }
-        
-        button.primary-btn { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; }
-        button.primary-btn:hover { background: #0056b3; }
-
-        .result-table { width: 100%; border-collapse: collapse; display: none; margin-top: 10px; }
-        .result-table td { padding: 12px; border: 1px solid #ddd; font-size: 14px; }
-        .result-table td:first-child { background: #f8f9fa; font-weight: bold; width: 35%; color: #555; }
-        
-        .tool-section { margin-bottom: 15px; }
-        .tool-section summary { font-weight: bold; cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 4px; list-style: none; display: flex; justify-content: space-between; border: 1px solid #eee; }
-        .tool-section summary::after { content: '▼'; font-size: 10px; color: #888; }
-        .tool-section[open] summary::after { content: '▲'; }
-
-        .links-list { list-style: none; padding: 5px 0 0 0; }
-        .link-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; }
-        .link-info { display: flex; flex-direction: column; overflow: hidden; }
-        .link-name { color: #333; font-weight: 500; font-size: 13px; }
-        .link-url { color: #888; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-        
-        .copy-btn { background: #eee; border: 1px solid #ccc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
-
-        .astral-box { margin-top: 10px; padding: 10px; border: 1px solid #cfe2ff; border-radius: 4px; background: #f8faff; }
-        .gen-row { margin: 10px 0; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-
-        /* ИСПРАВЛЕННОЕ ПОЛЕ ПАРОЛЯ */
-        .gen-btn { width: 100%; padding: 10px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; box-sizing: border-box; }
-        #passResult { 
-            width: 100%; 
-            height: 40px; /* Такая же высота, как у кнопок */
-            margin-top: 10px; 
-            font-family: monospace; 
-            font-weight: bold; 
-            text-align: center; 
-            background: #e9ecef; 
-            border: 1px dashed #6c757d; 
-            border-radius: 4px; 
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box; /* Чтобы padding не раздувал размер */
-        }
-
-        pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; max-height: 250px; }
-    </style>
+    <script src="script.js" defer></script>
 </head>
 <body>
 
@@ -89,6 +32,11 @@
             <summary>Часто используемые ссылки</summary>
             <div id="linksContainer" class="links-list">Загрузка...</div>
         </details>
+
+	<details class="tool-section">
+   	 <summary>Инструкции для менеджеров</summary>
+   	 <div id="instructionsContainer" class="links-list">Загрузка...</div>
+	</details>
 
         <details class="tool-section">
             <summary>Настройки ОФД</summary>
@@ -129,121 +77,5 @@
     </div>
 </div>
 
-<script>
-    async function initAll() {
-        loadLinks(GOOGLE_SHEET_CSV_URL, 'linksContainer');
-        loadLinks(OFD_CONFIG_CSV_URL, 'ofdLinksContainer');
-        loadStaff();
-    }
-
-    async function loadLinks(url, targetId) {
-        const container = document.getElementById(targetId);
-        if (!url) return;
-        try {
-            const response = await fetch(url);
-            const data = await response.text();
-            const rows = data.split(/\r?\n/).slice(1);
-            container.innerHTML = rows.map(row => {
-                const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if (cols.length < 2) return '';
-                const name = cols[0].replace(/"/g, '').trim();
-                const val = cols[1].replace(/"/g, '').trim();
-                return `<div class="link-item">
-                    <div class="link-info"><span class="link-name">${name}</span><span class="link-url">${val}</span></div>
-                    <button class="copy-btn" onclick="copyText('${val}', this)">📋</button>
-                </div>`;
-            }).join('');
-        } catch(e) { container.innerHTML = "Ошибка загрузки"; }
-    }
-
-    let staffData = [];
-    async function loadStaff() {
-        if (typeof STAFF_CSV_URL === 'undefined' || !STAFF_CSV_URL) return;
-        try {
-            const response = await fetch(STAFF_CSV_URL);
-            const data = await response.text();
-            const rows = data.split(/\r?\n/).slice(1);
-            const select = document.getElementById('staffSelect');
-            rows.forEach(row => {
-                const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if (cols.length >= 2) {
-                    const name = cols[0].replace(/"/g, '').trim();
-                    const email = cols[1].replace(/"/g, '').trim();
-                    staffData.push({name, email});
-                    let opt = document.createElement('option');
-                    opt.value = email; opt.innerText = name;
-                    select.appendChild(opt);
-                }
-            });
-        } catch(e) {}
-    }
-
-    function toggleAstral() {
-        const box = document.getElementById('astralBox');
-        box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function showStaffEmail() {
-        const email = document.getElementById('staffSelect').value;
-        const res = document.getElementById('staffEmailResult');
-        res.innerHTML = email ? `Почта: <b>${email}</b> <button class="copy-btn" onclick="copyText('${email}', this)">📋</button>` : "";
-    }
-
-    function copyText(text, btn) {
-        navigator.clipboard.writeText(text).then(() => {
-            const old = btn.innerText; btn.innerText = "✅";
-            setTimeout(() => btn.innerText = old, 1000);
-        });
-    }
-
-    function generatePass() {
-        const len = document.getElementById('passLen').value;
-        const charset = (document.getElementById('genLower').checked ? "abcdefghijklmnopqrstuvwxyz" : "") +
-                        (document.getElementById('genUpper').checked ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : "") +
-                        (document.getElementById('genNum').checked ? "0123456789" : "") +
-                        (document.getElementById('genSym').checked ? "!@#$%^&*()_+" : "");
-        if (!charset) return;
-        let res = "";
-        for (let i = 0; i < len; i++) res += charset.charAt(Math.floor(Math.random() * charset.length));
-        document.getElementById('passResult').innerText = res;
-    }
-
-    function copyPass() {
-        const p = document.getElementById('passResult').innerText;
-        if (p !== "****") copyText(p, document.getElementById('passResult'));
-    }
-
-    async function getData() {
-        const inn = document.getElementById('innInput').value.trim();
-        const body = document.getElementById('resBody');
-        const errorBox = document.getElementById('errorBox');
-        if (!inn) return;
-        errorBox.innerText = "";
-        try {
-            const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
-                method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": "Token " + API_KEY },
-                body: JSON.stringify({query: inn})
-            });
-            const result = await response.json();
-            if (result.suggestions?.length > 0) {
-                const d = result.suggestions[0].data;
-                document.getElementById('rawData').innerText = JSON.stringify(result, null, 2);
-                document.getElementById('rawContainer').style.display = 'block';
-                const fields = [
-                    ["ИНН", d.inn], ["КПП", d.kpp], ["ОГРН", d.ogrn], ["ОКПО", d.okpo],
-                    ["Полное имя", d.name?.full_with_opf], ["Сокр. имя", d.name?.short_with_opf],
-                    ["Адрес", d.address?.value], ["ОКВЭД", d.okved],
-                    ["Руководитель", d.management?.name || result.suggestions[0].value],
-                    ["ИФНС Терр.", d.tax_authority?.name], ["ИФНС Рег.", d.registration_authority?.name],
-                    ["Код СФР", d.sfr_registration_number]
-                ];
-                body.innerHTML = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
-                document.getElementById('resTable').style.display = 'table';
-            } else { errorBox.innerText = "Не найдено"; }
-        } catch (e) { errorBox.innerText = "Ошибка API"; }
-    }
-
-    initAll();
-</script>
 </body>
 </html>
