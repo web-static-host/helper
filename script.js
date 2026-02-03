@@ -1,3 +1,5 @@
+const LOCAL_SERVER = 'http://127.0.0.1:5000';
+
 async function initAll() {
     loadLinks(GOOGLE_SHEET_CSV_URL, 'linksContainer');
     loadLinks(OFD_CONFIG_CSV_URL, 'ofdLinksContainer');
@@ -13,21 +15,17 @@ async function loadLinks(url, targetId) {
         const data = await response.text();
         const rows = data.split(/\r?\n/).slice(1);
         container.innerHTML = rows.map(row => {
-            const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^**"]*$)/);
+            const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length < 2) return '';
             
             const name = cols[0].replace(/"/g, '').trim();
             const val = cols[1].replace(/"/g, '').trim();
             
-            // Определяем, файл это или ссылка
             const isDownloadable = val.includes('export=download');
-            
-            // Формируем кнопку действия (Скачать или Открыть)
             const actionBtn = isDownloadable 
                 ? `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать файл">📥</a>`
                 : `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть ссылку">🔗</a>`;
 
-            // Условие для отображения текста ссылки: если файл, то скрываем (display: none)
             const urlDisplay = isDownloadable ? 'display: none;' : '';
 
             return `
@@ -104,14 +102,18 @@ function copyPass() {
     if (p !== "****") copyText(p, document.getElementById('passResult'));
 }
 
+// --- ОСНОВНОЙ ПОИСК РЕКВИЗИТОВ ---
 async function getData() {
-    const inn = document.getElementById('innInput').value.trim();
+    const innRaw = document.getElementById('innInput').value.trim();
     const body = document.getElementById('resBody');
     const errorBox = document.getElementById('errorBox');
+    const resDivSfr = document.getElementById('sfrResult');
     
-    if (!inn) return;
-    
+    if (!innRaw) return;
+    const inn = innRaw.replace(/\D/g, '');
+
     errorBox.innerText = "";
+    resDivSfr.innerHTML = ""; // Сбрасываем старые запросы СФР
     document.getElementById('resTable').style.display = 'none';
     
     try {
@@ -130,33 +132,13 @@ async function getData() {
         if (result.suggestions && result.suggestions.length > 0) {
             const d = result.suggestions[0].data;
             
-            // 1. Индекс и адрес
             const postalCode = d.address?.data?.postal_code || "";
             let fullAddress = d.address?.value || "—";
             if (postalCode && !fullAddress.includes(postalCode)) {
                 fullAddress = postalCode + ", " + fullAddress;
             }
 
-            // 2. ЛОГИКА ИЗ ТВОЕГО PYTHON-КОДА (Поиск кода ИФНС)
-            let taxOfficeTerr = "";
-            
-            // Сначала смотрим глубоко в адресе (tax_office)
-            taxOfficeTerr = d.address?.data?.tax_office;
-
-            // Если там пусто, смотрим в основном поле tax_office
-            if (!taxOfficeTerr) {
-                const rawTaxOffice = d.tax_authority; // В JS API DaData это поле называется tax_authority
-                if (typeof rawTaxOffice === 'string' && rawTaxOffice.trim()) {
-                    taxOfficeTerr = rawTaxOffice.trim();
-                } else if (rawTaxOffice && typeof rawTaxOffice === 'object' && rawTaxOffice.code) {
-                    taxOfficeTerr = String(rawTaxOffice.code).trim();
-                }
-            }
-
-            // Если всё еще пусто, берем регистрационную (как запасной вариант из твоего кода)
-            if (!taxOfficeTerr) {
-                taxOfficeTerr = d.tax_authority_reg || "";
-            }
+            let taxOfficeTerr = d.address?.data?.tax_office || d.tax_authority || d.tax_authority_reg || "—";
 
             const fields = [
                 ["ИНН", d.inn], 
@@ -168,11 +150,24 @@ async function getData() {
                 ["Адрес", fullAddress], 
                 ["ОКВЭД", d.okved],
                 ["Руководитель", d.management?.name || result.suggestions[0].value],
-                ["ИФНС Терр.", taxOfficeTerr || "—"],
-                ["Код СФР", d.sfr_registration_number || d.pfr_registration_number || "—"]
+                ["ИФНС Терр.", taxOfficeTerr],
             ];
             
-            body.innerHTML = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
+            // Генерируем таблицу
+            let html = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
+            
+            // Добавляем строку СФР с кнопкой запроса
+            html += `
+                <tr>
+                    <td>Код СФР</td>
+                    <td>
+                        <strong id="sfrValue" style="color:#007bff;">Не указан</strong>
+                        <button id="btnGetSfr" class="copy-btn" onclick="getSfrOnly()" style="margin-left:10px; padding:2px 8px; font-size:11px;">Запросить</button>
+                    </td>
+                </tr>
+            `;
+
+            body.innerHTML = html;
             document.getElementById('resTable').style.display = 'table';
             
         } else { 
@@ -183,17 +178,97 @@ async function getData() {
     }
 }
 
+// --- ЛОГИКА СФР ЧЕРЕЗ EXE МОДУЛЬ ---
+async function getSfrOnly() {
+    const inn = document.getElementById('innInput').value.replace(/\D/g, '');
+    const resDiv = document.getElementById('sfrResult');
+    
+    if (inn.length < 10) {
+        alert("Введите корректный ИНН!");
+        return;
+    }
 
+    resDiv.innerHTML = "⌛ Проверка связи с модулем...";
+
+    try {
+        const ping = await fetch(`${LOCAL_SERVER}/ping`);
+        if (!ping.ok) throw new Error();
+
+        resDiv.innerHTML = "⌛ Получение капчи...";
+        const capResp = await fetch(`${LOCAL_SERVER}/get_captcha`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ inn: inn })
+        });
+        const capData = await capResp.json();
+
+        if (capData.image) {
+            resDiv.innerHTML = `
+                <div style="border:1px solid #ddd; padding:15px; margin-top:10px; background:#fff; border-radius:8px; display:inline-block;">
+                    <p style="margin:0 0 10px 0;">Введите код с картинки:</p>
+                    <img src="data:image/png;base64,${capData.image}" style="display:block; margin-bottom:10px; border:1px solid #eee;">
+                    <input type="text" id="capAns" placeholder="Цифры" style="width:80px; padding:6px; border:1px solid #ccc;">
+                    <button class="primary-btn" id="btnConfirmCap" onclick="confirmSfrOnly('${inn}')" style="padding:6px 12px;">ОК</button>
+                </div>
+            `;
+
+            // Обработка Enter в поле капчи
+            document.getElementById('capAns').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') confirmSfrOnly(inn);
+            });
+            document.getElementById('capAns').focus();
+
+        } else {
+            resDiv.innerHTML = "❌ Ошибка: " + (capData.error || "неизвестно");
+        }
+    } catch (e) {
+        resDiv.innerHTML = `
+            <div style="background:#fff3cd; padding:15px; border:1px solid #ffeeba; color:#856404; border-radius:8px; margin-top:10px;">
+                <strong>Модуль СФР не запущен!</strong><br>
+                <a href="app/SFR_Engine_Setup.exe" download style="display:inline-block; background:#d32f2f; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; margin-top:10px;">📥 Скачать установщик</a>
+            </div>
+        `;
+    }
+}
+
+async function confirmSfrOnly(inn) {
+    const ansInput = document.getElementById('capAns');
+    const resDiv = document.getElementById('sfrResult');
+    const sfrValue = document.getElementById('sfrValue');
+    
+    if (!ansInput || !ansInput.value) return;
+    resDiv.innerHTML = "⌛ Запрос в СФР...";
+
+    try {
+        const resp = await fetch(`${LOCAL_SERVER}/submit_sfr`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ inn: inn, captchaAnswer: ansInput.value })
+        });
+        
+        const result = await resp.json();
+
+        if (result.regNum) {
+            sfrValue.innerText = result.regNum;
+            sfrValue.style.color = "#28a745";
+            resDiv.innerHTML = "✅ Код успешно получен";
+            document.getElementById('btnGetSfr').style.display = 'none';
+        } else {
+            alert("Ошибка СФР: " + (result.message || "Неверная капча"));
+            getSfrOnly();
+        }
+    } catch (e) {
+        resDiv.innerHTML = "❌ Ошибка связи с сервером.";
+    }
+}
+
+// --- ОСТАЛЬНЫЕ ИНСТРУМЕНТЫ ---
 async function getIfnsByAddress() {
     const addr = document.getElementById('addressInput').value.trim();
     const resDiv = document.getElementById('addressIfnsResult');
-    
-    // Твой проверенный ключ
     const DADATA_KEY = "1e72b6fad742701b3a642bc189774e34e2ae7593"; 
-    
     if (!addr) return;
     resDiv.innerHTML = "Связь с ФНС...";
-
     try {
         const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
             method: "POST",
@@ -204,44 +279,27 @@ async function getIfnsByAddress() {
             },
             body: JSON.stringify({ query: addr, count: 1 })
         });
-
-        if (!response.ok) throw new Error('Ошибка сервиса');
-
         const result = await response.json();
-
         if (result.suggestions && result.suggestions.length > 0) {
             const data = result.suggestions[0].data;
-            
-            // Вытаскиваем ИФНС (tax_office) и индекс
-            const ifns = data.tax_office || "Не найден";
-            const zip = data.postal_code || "";
-            const fullAddr = result.suggestions[0].value;
-
-            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:18px; font-weight:bold;">${ifns}</span>
-                                <br><small style="color:#666;">${zip} ${fullAddr}</small>`;
+            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:18px; font-weight:bold;">${data.tax_office || "—"}</span>
+                                <br><small>${data.postal_code || ""} ${result.suggestions[0].value}</small>`;
         } else {
-            resDiv.innerHTML = "<span style='color:#666;'>Адрес не найден</span>";
+            resDiv.innerHTML = "Адрес не найден";
         }
     } catch (error) {
-        resDiv.innerHTML = "<span style='color:#d32f2f;'>Ошибка: проверьте интернет</span>";
-        console.error("Ошибка DaData:", error);
+        resDiv.innerHTML = "Ошибка связи";
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('addressInput');
-
-    if (input) {
-        input.addEventListener('keypress', (e) => {
-            // Если нажат Enter
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Чтобы страница не перезагрузилась
-                getIfnsByAddress(); // Запускаем твою функцию поиска
-            }
-        });
-    }
+    initAll();
+    // Enter для поиска ИФНС
+    document.getElementById('addressInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') getIfnsByAddress();
+    });
+    // Enter для главного поиска ИНН
+    document.getElementById('innInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') getData();
+    });
 });
-
-
-
-initAll();
