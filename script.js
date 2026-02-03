@@ -184,67 +184,64 @@ async function getData() {
 }
 
 
-function getIfnsByAddress() {
+async function getIfnsByAddress() {
     const addr = document.getElementById('addressInput').value.trim();
     const resDiv = document.getElementById('addressIfnsResult');
     
-    // ВСТАВЬ СВОЙ КЛЮЧ
-    const AHUNTER_KEY = "trollfase1998jyJJbEhgoMhAqaETZXzhfd"; 
+    // Твой проверенный ключ
+    const DADATA_KEY = "1e72b6fad742701b3a642bc189774e34e2ae7593"; 
     
     if (!addr) return;
-    resDiv.innerHTML = "Поиск...";
+    resDiv.innerHTML = "Связь с ФНС...";
 
-    // Создаем уникальное имя функции для ответа
-    const callbackName = 'ahunter_cb_' + Math.round(Math.random() * 1000000);
+    try {
+        const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Token " + DADATA_KEY
+            },
+            body: JSON.stringify({ query: addr, count: 1 })
+        });
 
-    // Описываем, что делать, когда придут данные
-    window[callbackName] = function(data) {
-        if (data.suggestions && data.suggestions.length > 0) {
-            const item = data.suggestions[0];
-            const ifns = item.data?.ifns_fl || item.data?.ifns_ul || "Не найден";
-            const zip = item.data?.zip || "";
+        if (!response.ok) throw new Error('Ошибка сервиса');
 
-            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:18px;">${ifns}</span>
-                                <br><small style="color:#666; font-weight:normal;">${zip} ${item.value}</small>`;
+        const result = await response.json();
+
+        if (result.suggestions && result.suggestions.length > 0) {
+            const data = result.suggestions[0].data;
+            
+            // Вытаскиваем ИФНС (tax_office) и индекс
+            const ifns = data.tax_office || "Не найден";
+            const zip = data.postal_code || "";
+            const fullAddr = result.suggestions[0].value;
+
+            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:18px; font-weight:bold;">${ifns}</span>
+                                <br><small style="color:#666;">${zip} ${fullAddr}</small>`;
         } else {
-            resDiv.innerHTML = `<span style="color:#666;">Адрес не найден</span>`;
+            resDiv.innerHTML = "<span style='color:#666;'>Адрес не найден</span>";
         }
-        // Удаляем скрипт после работы
-        document.body.removeChild(script);
-        delete window[callbackName];
-    };
-
-    // Создаем сам запрос (через JSONP)
-    const script = document.createElement('script');
-    script.src = `https://www.ahunter.ru/site/suggest/address?output=jsonp&query=${encodeURIComponent(addr)}&user=${AHUNTER_KEY}&callback=${callbackName}`;
-    
-    // Если через 5 секунд ничего не пришло — пишем ошибку
-    script.onerror = () => {
-        resDiv.innerHTML = `<span style="color:#d32f2f;">Ошибка сети или ключа</span>`;
-    };
-
-    document.body.appendChild(script);
+    } catch (error) {
+        resDiv.innerHTML = "<span style='color:#d32f2f;'>Ошибка: проверьте интернет</span>";
+        console.error("Ошибка DaData:", error);
+    }
 }
 
-function loadFnsFrame() {
-    const container = document.getElementById('fnsFrameContainer');
-    // Заменяем кнопку на фрейм
-    container.innerHTML = `
-        <iframe 
-            src="https://service.nalog.ru/addrno.do" 
-            width="100%" 
-            height="550px" 
-            style="border:1px solid #ddd; border-radius: 8px; background: white;"
-            loading="lazy">
-        </iframe>
-        <button class="gen-btn" style="width:100%; margin-top:10px; background:#666;" onclick="reloadFnsFrame()">Обновить окно</button>
-    `;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('addressInput');
 
-function reloadFnsFrame() {
-    const frame = document.querySelector('#fnsFrameContainer iframe');
-    if (frame) frame.src = frame.src;
-}
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            // Если нажат Enter
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Чтобы страница не перезагрузилась
+                getIfnsByAddress(); // Запускаем твою функцию поиска
+            }
+        });
+    }
+});
+
 
 
 initAll();
