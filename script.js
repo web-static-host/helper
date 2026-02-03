@@ -184,28 +184,23 @@ async function getData() {
 }
 
 
-async function getIfnsByAddress() {
+function getIfnsByAddress() {
     const addr = document.getElementById('addressInput').value.trim();
     const resDiv = document.getElementById('addressIfnsResult');
     
-    // === ВСТАВЬ СВОЙ КЛЮЧ НИЖЕ В КАВЫЧКИ ===
+    // ВСТАВЬ СВОЙ КЛЮЧ
     const AHUNTER_KEY = "trollfase1998jyJJbEhgoMhAqaETZXzhfd"; 
     
     if (!addr) return;
     resDiv.innerHTML = "Поиск...";
 
-    try {
-        // Запрос к Ahunter (они разрешают CORS, поэтому заработает без прокси)
-        const url = `https://www.ahunter.ru/site/suggest/address?output=json&query=${encodeURIComponent(addr)}&user=${AHUNTER_KEY}`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
+    // Создаем уникальное имя функции для ответа
+    const callbackName = 'ahunter_cb_' + Math.round(Math.random() * 1000000);
 
+    // Описываем, что делать, когда придут данные
+    window[callbackName] = function(data) {
         if (data.suggestions && data.suggestions.length > 0) {
             const item = data.suggestions[0];
-            
-            // Вытаскиваем код ИФНС из данных Ahunter
-            // Проверяем и для физлиц (ifns_fl), и для юрлиц (ifns_ul)
             const ifns = item.data?.ifns_fl || item.data?.ifns_ul || "Не найден";
             const zip = item.data?.zip || "";
 
@@ -214,10 +209,21 @@ async function getIfnsByAddress() {
         } else {
             resDiv.innerHTML = `<span style="color:#666;">Адрес не найден</span>`;
         }
-    } catch (e) {
-        resDiv.innerHTML = `<span style="color:#d32f2f;">Ошибка: проверьте ключ или сеть</span>`;
-        console.error("Ahunter Error:", e);
-    }
+        // Удаляем скрипт после работы
+        document.body.removeChild(script);
+        delete window[callbackName];
+    };
+
+    // Создаем сам запрос (через JSONP)
+    const script = document.createElement('script');
+    script.src = `https://www.ahunter.ru/site/suggest/address?output=jsonp&query=${encodeURIComponent(addr)}&user=${AHUNTER_KEY}&callback=${callbackName}`;
+    
+    // Если через 5 секунд ничего не пришло — пишем ошибку
+    script.onerror = () => {
+        resDiv.innerHTML = `<span style="color:#d32f2f;">Ошибка сети или ключа</span>`;
+    };
+
+    document.body.appendChild(script);
 }
 
 function loadFnsFrame() {
