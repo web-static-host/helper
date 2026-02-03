@@ -187,37 +187,61 @@ async function getData() {
 async function getIfnsByAddress() {
     const addr = document.getElementById('addressInput').value.trim();
     const resDiv = document.getElementById('addressIfnsResult');
-    
     if (!addr) return;
-    resDiv.innerText = "Поиск...";
+    
+    // ВСТАВЬ СВОЙ КЛЮЧ ОТ AHUNTER ТУТ
+    const AHUNTER_KEY = "ТВОЙ_КЛЮЧ"; 
+
+    resDiv.innerText = "Ищу в базе ФНС...";
 
     try {
-        const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Token " + API_KEY
-            },
-            body: JSON.stringify({ query: addr, count: 1 })
-        });
+        // Запрос к API Ahunter для распознавания адреса и получения кодов
+        const url = `https://www.ahunter.ru/site/suggest/address?output=json&query=${encodeURIComponent(addr)}&user=${trollfase1998jyJJbEhgoMhAqaETZXzhfd}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
 
-        const result = await response.json();
+        if (data.suggestions && data.suggestions.length > 0) {
+            const item = data.suggestions[0];
+            // Ищем код ИФНС в данных
+            const ifns = item.data?.ifns_fl || item.data?.ifns_ul || "Не найден";
+            const zip = item.data?.zip || "";
 
-        if (result.suggestions && result.suggestions.length > 0) {
-            const data = result.suggestions[0].data;
-            // Вытаскиваем код налоговой
-            const ifns = data.tax_authority || "Не найден";
-            const index = data.postal_code || "";
-            
-            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:16px;">${ifns}</span><br>
-                                <small style="color:#666; font-weight:normal;">${index} ${result.suggestions[0].value}</small>`;
+            resDiv.innerHTML = `
+                <div style="background:#f0f7ff; padding:10px; border-radius:5px; border-left:4px solid #007bff;">
+                    Код ИФНС: <span style="font-size:20px; color:#d32f2f; font-weight:bold;">${ifns}</span>
+                    <button class="copy-btn" onclick="copyText('${ifns}', this)">📋</button>
+                    <br><small style="color:#666;">${zip} ${item.value}</small>
+                </div>
+            `;
         } else {
-            resDiv.innerText = "Адрес не найден";
+            resDiv.innerText = "Адрес не распознан. Добавьте город или номер дома.";
         }
     } catch (e) {
-        resDiv.innerText = "Ошибка запроса";
+        resDiv.innerText = "Ошибка сервиса";
+        console.error(e);
     }
 }
+
+function loadFnsFrame() {
+    const container = document.getElementById('fnsFrameContainer');
+    // Заменяем кнопку на фрейм
+    container.innerHTML = `
+        <iframe 
+            src="https://service.nalog.ru/addrno.do" 
+            width="100%" 
+            height="550px" 
+            style="border:1px solid #ddd; border-radius: 8px; background: white;"
+            loading="lazy">
+        </iframe>
+        <button class="gen-btn" style="width:100%; margin-top:10px; background:#666;" onclick="reloadFnsFrame()">Обновить окно</button>
+    `;
+}
+
+function reloadFnsFrame() {
+    const frame = document.querySelector('#fnsFrameContainer iframe');
+    if (frame) frame.src = frame.src;
+}
+
 
 initAll();
