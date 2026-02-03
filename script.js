@@ -108,30 +108,87 @@ async function getData() {
     const inn = document.getElementById('innInput').value.trim();
     const body = document.getElementById('resBody');
     const errorBox = document.getElementById('errorBox');
+    
     if (!inn) return;
+    
     errorBox.innerText = "";
+    // Скрываем таблицу перед новым поиском
+    document.getElementById('resTable').style.display = 'none';
+    
     try {
+        // 1. Запрос к DaData
         const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
-            method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": "Token " + API_KEY },
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json", 
+                "Accept": "application/json", 
+                "Authorization": "Token " + API_KEY 
+            },
             body: JSON.stringify({query: inn})
         });
+        
         const result = await response.json();
-        if (result.suggestions?.length > 0) {
+        
+        if (result.suggestions && result.suggestions.length > 0) {
             const d = result.suggestions[0].data;
-            document.getElementById('rawData').innerText = JSON.stringify(result, null, 2);
-            document.getElementById('rawContainer').style.display = 'block';
+            
+            // Формируем адрес с индексом
+            const postalCode = d.address?.data?.postal_code || "";
+            let fullAddress = d.address?.value || "—";
+            if (postalCode && !fullAddress.includes(postalCode)) {
+                fullAddress = postalCode + ", " + fullAddress;
+            }
+
+            let ifnsTerr = "Поиск...";
+
+            // 2. Попытка достать ИФНС через твой Worker
+            // ЗАМЕНИ ССЫЛКУ НИЖЕ НА СВОЮ ИЗ CLOUDFLARE
+            const myWorker = "https://tight-feather-3915.trollfase1998.workers.dev/"; 
+            
+            try {
+                if (d.address?.value) {
+                    const nalogUrl = `https://service.nalog.ru/addrno-proc.json?c=next&step=1&adr=${encodeURIComponent(d.address.value)}`;
+                    const fnsRes = await fetch(`${myWorker}?url=${encodeURIComponent(nalogUrl)}`);
+                    const fnsData = await fnsRes.json();
+                    ifnsTerr = fnsData.ifns || d.tax_authority || "—";
+                } else {
+                    ifnsTerr = d.tax_authority || "—";
+                }
+            } catch (fnsErr) {
+                console.error("Worker error:", fnsErr);
+                ifnsTerr = d.tax_authority || "—"; // Если воркер сбоит, берем что есть
+            }
+
             const fields = [
-                ["ИНН", d.inn], ["КПП", d.kpp], ["ОГРН", d.ogrn], ["ОКПО", d.okpo],
-                ["Полное имя", d.name?.full_with_opf], ["Сокр. имя", d.name?.short_with_opf],
-                ["Адрес", d.address?.value], ["ОКВЭД", d.okved],
+                ["ИНН", d.inn], 
+                ["КПП", d.kpp], 
+                ["ОГРН", d.ogrn], 
+                ["ОКПО", d.okpo],
+                ["Полное имя", d.name?.full_with_opf], 
+                ["Сокр. имя", d.name?.short_with_opf],
+                ["Адрес", fullAddress], 
+                ["ОКВЭД", d.okved],
                 ["Руководитель", d.management?.name || result.suggestions[0].value],
-                ["ИФНС Терр.", d.tax_authority?.name], ["ИФНС Рег.", d.registration_authority?.name],
+                ["ИФНС Терр.", ifnsTerr],
                 ["Код СФР", d.sfr_registration_number]
             ];
+            
             body.innerHTML = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
             document.getElementById('resTable').style.display = 'table';
-        } else { errorBox.innerText = "Не найдено"; }
-    } catch (e) { errorBox.innerText = "Ошибка API"; }
+            
+            // Raw data для отладки
+            if (document.getElementById('rawData')) {
+                document.getElementById('rawData').innerText = JSON.stringify(result, null, 2);
+                document.getElementById('rawContainer').style.display = 'block';
+            }
+            
+        } else { 
+            errorBox.innerText = "Организация не найдена"; 
+        }
+    } catch (e) { 
+        console.error("Main error:", e);
+        errorBox.innerText = "Ошибка при запросе данных"; 
+    }
 }
 
 initAll();
