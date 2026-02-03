@@ -187,39 +187,36 @@ async function getData() {
 async function getIfnsByAddress() {
     const addr = document.getElementById('addressInput').value.trim();
     const resDiv = document.getElementById('addressIfnsResult');
-    if (!addr) return;
     
-    // ВСТАВЬ СВОЙ КЛЮЧ ОТ AHUNTER ТУТ
-    const AHUNTER_KEY = "ТВОЙ_КЛЮЧ"; 
-
-    resDiv.innerText = "Ищу в базе ФНС...";
+    // === ВСТАВЬ СВОЙ КЛЮЧ НИЖЕ В КАВЫЧКИ ===
+    const AHUNTER_KEY = "trollfase1998jyJJbEhgoMhAqaETZXzhfd"; 
+    
+    if (!addr) return;
+    resDiv.innerHTML = "Поиск...";
 
     try {
-        // Запрос к API Ahunter для распознавания адреса и получения кодов
-        const url = `https://www.ahunter.ru/site/suggest/address?output=json&query=${encodeURIComponent(addr)}&user=${trollfase1998jyJJbEhgoMhAqaETZXzhfd}`;
+        // Запрос к Ahunter (они разрешают CORS, поэтому заработает без прокси)
+        const url = `https://www.ahunter.ru/site/suggest/address?output=json&query=${encodeURIComponent(addr)}&user=${AHUNTER_KEY}`;
         
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.suggestions && data.suggestions.length > 0) {
             const item = data.suggestions[0];
-            // Ищем код ИФНС в данных
+            
+            // Вытаскиваем код ИФНС из данных Ahunter
+            // Проверяем и для физлиц (ifns_fl), и для юрлиц (ifns_ul)
             const ifns = item.data?.ifns_fl || item.data?.ifns_ul || "Не найден";
             const zip = item.data?.zip || "";
 
-            resDiv.innerHTML = `
-                <div style="background:#f0f7ff; padding:10px; border-radius:5px; border-left:4px solid #007bff;">
-                    Код ИФНС: <span style="font-size:20px; color:#d32f2f; font-weight:bold;">${ifns}</span>
-                    <button class="copy-btn" onclick="copyText('${ifns}', this)">📋</button>
-                    <br><small style="color:#666;">${zip} ${item.value}</small>
-                </div>
-            `;
+            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:18px;">${ifns}</span>
+                                <br><small style="color:#666; font-weight:normal;">${zip} ${item.value}</small>`;
         } else {
-            resDiv.innerText = "Адрес не распознан. Добавьте город или номер дома.";
+            resDiv.innerHTML = `<span style="color:#666;">Адрес не найден</span>`;
         }
     } catch (e) {
-        resDiv.innerText = "Ошибка сервиса";
-        console.error(e);
+        resDiv.innerHTML = `<span style="color:#d32f2f;">Ошибка: проверьте ключ или сеть</span>`;
+        console.error("Ahunter Error:", e);
     }
 }
 
