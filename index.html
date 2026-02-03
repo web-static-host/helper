@@ -33,10 +33,10 @@
             <div id="linksContainer" class="links-list">Загрузка...</div>
         </details>
 
-	<details class="tool-section">
-   	 <summary>Инструкции для менеджеров</summary>
-   	 <div id="instructionsContainer" class="links-list">Загрузка...</div>
-	</details>
+        <details class="tool-section">
+            <summary>Инструкции для менеджеров</summary>
+            <div id="instructionsContainer" class="links-list">Загрузка...</div>
+        </details>
 
         <details class="tool-section">
             <summary>Настройки ОФД</summary>
@@ -57,6 +57,16 @@
 
     <div class="column col-right">
         <h2>Доп инструменты</h2>
+
+        <details class="tool-section">
+            <summary>ИФНС по адресу</summary>
+            <div style="padding-top:10px;">
+                <input type="text" id="addressInput" placeholder="Город, улица, дом..." style="width: 100%; margin-bottom: 8px; box-sizing: border-box; padding: 5px;">
+                <button class="gen-btn" style="width: 100%;" onclick="getIfnsByAddress()">Найти код</button>
+                <div id="addressIfnsResult" style="margin-top: 10px; font-weight: bold; font-size: 13px; line-height: 1.4;"></div>
+            </div>
+        </details>
+
         <details class="tool-section">
             <summary>Генератор паролей</summary>
             <div style="padding-top:10px;">

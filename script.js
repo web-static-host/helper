@@ -112,11 +112,9 @@ async function getData() {
     if (!inn) return;
     
     errorBox.innerText = "";
-    // Скрываем таблицу перед новым поиском
     document.getElementById('resTable').style.display = 'none';
     
     try {
-        // 1. Запрос к DaData
         const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
             method: "POST", 
             headers: { 
@@ -132,31 +130,32 @@ async function getData() {
         if (result.suggestions && result.suggestions.length > 0) {
             const d = result.suggestions[0].data;
             
-            // Формируем адрес с индексом
+            // 1. Индекс и адрес
             const postalCode = d.address?.data?.postal_code || "";
             let fullAddress = d.address?.value || "—";
             if (postalCode && !fullAddress.includes(postalCode)) {
                 fullAddress = postalCode + ", " + fullAddress;
             }
 
-            let ifnsTerr = "Поиск...";
-
-            // 2. Попытка достать ИФНС через твой Worker
-            // ЗАМЕНИ ССЫЛКУ НИЖЕ НА СВОЮ ИЗ CLOUDFLARE
-            const myWorker = "https://tight-feather-3915.trollfase1998.workers.dev/"; 
+            // 2. ЛОГИКА ИЗ ТВОЕГО PYTHON-КОДА (Поиск кода ИФНС)
+            let taxOfficeTerr = "";
             
-            try {
-                if (d.address?.value) {
-                    const nalogUrl = `https://service.nalog.ru/addrno-proc.json?c=next&step=1&adr=${encodeURIComponent(d.address.value)}`;
-                    const fnsRes = await fetch(`${myWorker}?url=${encodeURIComponent(nalogUrl)}`);
-                    const fnsData = await fnsRes.json();
-                    ifnsTerr = fnsData.ifns || d.tax_authority || "—";
-                } else {
-                    ifnsTerr = d.tax_authority || "—";
+            // Сначала смотрим глубоко в адресе (tax_office)
+            taxOfficeTerr = d.address?.data?.tax_office;
+
+            // Если там пусто, смотрим в основном поле tax_office
+            if (!taxOfficeTerr) {
+                const rawTaxOffice = d.tax_authority; // В JS API DaData это поле называется tax_authority
+                if (typeof rawTaxOffice === 'string' && rawTaxOffice.trim()) {
+                    taxOfficeTerr = rawTaxOffice.trim();
+                } else if (rawTaxOffice && typeof rawTaxOffice === 'object' && rawTaxOffice.code) {
+                    taxOfficeTerr = String(rawTaxOffice.code).trim();
                 }
-            } catch (fnsErr) {
-                console.error("Worker error:", fnsErr);
-                ifnsTerr = d.tax_authority || "—"; // Если воркер сбоит, берем что есть
+            }
+
+            // Если всё еще пусто, берем регистрационную (как запасной вариант из твоего кода)
+            if (!taxOfficeTerr) {
+                taxOfficeTerr = d.tax_authority_reg || "";
             }
 
             const fields = [
@@ -169,25 +168,55 @@ async function getData() {
                 ["Адрес", fullAddress], 
                 ["ОКВЭД", d.okved],
                 ["Руководитель", d.management?.name || result.suggestions[0].value],
-                ["ИФНС Терр.", ifnsTerr],
-                ["Код СФР", d.sfr_registration_number]
+                ["ИФНС Терр.", taxOfficeTerr || "—"],
+                ["Код СФР", d.sfr_registration_number || d.pfr_registration_number || "—"]
             ];
             
             body.innerHTML = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
             document.getElementById('resTable').style.display = 'table';
             
-            // Raw data для отладки
-            if (document.getElementById('rawData')) {
-                document.getElementById('rawData').innerText = JSON.stringify(result, null, 2);
-                document.getElementById('rawContainer').style.display = 'block';
-            }
-            
         } else { 
-            errorBox.innerText = "Организация не найдена"; 
+            errorBox.innerText = "Не найдено"; 
         }
     } catch (e) { 
-        console.error("Main error:", e);
-        errorBox.innerText = "Ошибка при запросе данных"; 
+        errorBox.innerText = "Ошибка API"; 
+    }
+}
+
+
+async function getIfnsByAddress() {
+    const addr = document.getElementById('addressInput').value.trim();
+    const resDiv = document.getElementById('addressIfnsResult');
+    
+    if (!addr) return;
+    resDiv.innerText = "Поиск...";
+
+    try {
+        const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Token " + API_KEY
+            },
+            body: JSON.stringify({ query: addr, count: 1 })
+        });
+
+        const result = await response.json();
+
+        if (result.suggestions && result.suggestions.length > 0) {
+            const data = result.suggestions[0].data;
+            // Вытаскиваем код налоговой
+            const ifns = data.tax_authority || "Не найден";
+            const index = data.postal_code || "";
+            
+            resDiv.innerHTML = `Код ИФНС: <span style="color:#d32f2f; font-size:16px;">${ifns}</span><br>
+                                <small style="color:#666; font-weight:normal;">${index} ${result.suggestions[0].value}</small>`;
+        } else {
+            resDiv.innerText = "Адрес не найден";
+        }
+    } catch (e) {
+        resDiv.innerText = "Ошибка запроса";
     }
 }
 
