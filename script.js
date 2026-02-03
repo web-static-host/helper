@@ -225,7 +225,7 @@ async function getSfrOnly() {
         resDiv.innerHTML = `
             <div style="background:#fff3cd; padding:15px; border:1px solid #ffeeba; color:#856404; border-radius:8px; margin-top:10px;">
                 <strong>Модуль СФР не запущен!</strong><br>
-                <a href="app/SFR_Engine_Setup.exe" download style="display:inline-block; background:#d32f2f; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; margin-top:10px;">📥 Скачать установщик</a>
+                <a href="app/sfr_engine.exe" download style="display:inline-block; background:#d32f2f; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; margin-top:10px;">📥 Скачать установщик</a>
             </div>
         `;
     }
