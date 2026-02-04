@@ -14,6 +14,7 @@ async function loadLinks(url, targetId) {
         const response = await fetch(url);
         const data = await response.text();
         const rows = data.split(/\r?\n/).slice(1);
+        
         container.innerHTML = rows.map(row => {
             const cols = row.split(/[,;](?=(?:(?:[^"]*"){2})*[^"]*$)/);
             if (cols.length < 2) return '';
@@ -22,10 +23,17 @@ async function loadLinks(url, targetId) {
             const val = cols[1].replace(/"/g, '').trim();
             
             const isDownloadable = val.includes('export=download');
-            const actionBtn = isDownloadable 
-                ? `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать файл">📥</a>`
-                : `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть ссылку">🔗</a>`;
+            
+            // Кнопка действия (скачать/перейти) создается для всех, КРОМЕ ОФД
+            let actionBtn = '';
+            if (targetId !== 'ofdLinksContainer') {
+                actionBtn = isDownloadable 
+                    ? `<a href="${val}" download class="copy-btn" style="text-decoration:none;" title="Скачать файл">📥</a>`
+                    : `<a href="${val}" target="_blank" class="copy-btn" style="text-decoration:none;" title="Открыть ссылку">🔗</a>`;
+            }
 
+            // Скрываем текст ссылки ТОЛЬКО для файлов скачивания, чтобы не загромождать. 
+            // Для ОФД и обычных ссылок текст остается видимым.
             const urlDisplay = isDownloadable ? 'display: none;' : '';
 
             return `
@@ -36,7 +44,7 @@ async function loadLinks(url, targetId) {
                     </div>
                     <div style="display:flex; gap:5px;">
                         ${actionBtn}
-                        <button class="copy-btn" onclick="copyText('${val}', this)" title="Копировать ссылку">📋</button>
+                        <button class="copy-btn" onclick="copyText('${val}', this)" title="Копировать">📋</button>
                     </div>
                 </div>`;
         }).join('');
