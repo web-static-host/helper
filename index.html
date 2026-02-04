@@ -14,7 +14,10 @@
 
 <div class="main-wrapper">
     <div class="column col-left">
-        <h2>Реквизиты по ИНН</h2>
+        <h2 style="display: flex; align-items: center;">
+            Реквизиты по ИНН 
+            <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Основной инструмент для получения данных об организации или ИП в один клик. Введите ИНН в поле поиска. Система подтянет название (полное и сокращенное), КПП, ОГРН, адрес, ФИО руководителя и код ИФНС.</span></span>
+        </h2>
         <div class="search-box">
             <input type="text" id="innInput" placeholder="Введите ИНН">
             <button class="primary-btn" onclick="getData()">Найти</button>
@@ -33,22 +36,41 @@
     <div class="column col-mid">
         <h2>Полезное</h2>
         <details class="tool-section">
-            <summary>Часто используемые ссылки</summary>
+            <summary>
+                <div class="summary-content">
+                    <span>Часто используемые ссылки</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Быстрый переход или копирование адресов сайтов (ФНС, Астрал Отчет, ЛК ОФД).Избавляет от необходимости ручного ввода длинных URL-адресов на компьютере клиента. Кнопка 📋 копирует ссылку в буфер обмена мгновенно.</span></span>
+                </div>
+            </summary>
             <div id="linksContainer" class="links-list">Загрузка...</div>
         </details>
 
         <details class="tool-section">
-            <summary>Инструкции для менеджеров</summary>
+            <summary>
+                <div class="summary-content">
+                    <span>Инструкции для менеджеров</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Здесь находятся инструкции в формате pdf, либо ссылки на инструкции, которые иногда запрашивают менеджеры, чтобы отправить их клиентам</span></span>
+                </div>
+            </summary>
             <div id="instructionsContainer" class="links-list">Загрузка...</div>
         </details>
 
         <details class="tool-section">
-            <summary>Настройки ОФД</summary>
+            <summary>
+                <div class="summary-content">
+                    <span>Настройки ОФД</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Содержит актуальные настройки ОФД для передачи данных при регистрации ККТ.</span></span>
+                </div>
+            </summary>
             <div style="padding: 10px 0;">
                 <div id="ofdLinksContainer" class="links-list" style="margin-bottom:10px;">Загрузка...</div>
                 
-                <button onclick="toggleAstral()" style="width:100%; padding:8px; cursor:pointer;">Показать данные Астрал Софт</button>
-                <div id="astralBox" class="astral-box" style="display:none;">
+                <div style="display: flex; align-items: center; justify-content: flex-start;">
+                    <button onclick="toggleAstral()" style="padding:8px; cursor:pointer; flex-grow: 1;">Показать данные Астрал Софт</button>
+                    <span class="tooltip" style="margin-left: 8px;"><span class="tooltip-icon">?</span><span class="tooltiptext">Кнопка открывает расширенные данные (ИНН и Email сотрудников). Это важно для регистрации касс Атол на новых версиях драйверов, где требуется ввод данных сервисной организации.</span></span>
+                </div>
+
+                <div id="astralBox" class="astral-box" style="display:none; margin-top: 10px;">
                     <p style="font-size:12px; margin:0 0 10px 0;">ИНН: <b>4027145240</b> <button class="copy-btn" onclick="copyText('4027145240', this)">📋</button></p>
                     <select id="staffSelect" style="width:100%;" onchange="showStaffEmail()">
                         <option value="">Выберите сотрудника...</option>
@@ -63,14 +85,17 @@
         <h2>Доп инструменты</h2>
 
         <details class="tool-section">
-            <summary>ИФНС по адресу</summary>
+            <summary>
+                <div class="summary-content">
+                    <span>ИФНС по адресу</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Ищет код ифнс по адресу. Адрес можно вводить в свободной форме. Так же можент помочь с поиском индекса, если клиент его не предоставил.</span></span>
+                </div>
+            </summary>
             <div style="padding-top:10px;">
                 <input type="text" id="addressInput" placeholder="Город, улица, дом..." 
                        style="width: 100%; margin-bottom: 8px; box-sizing: border-box; padding: 5px;">
                 
-                <button class="gen-btn" style="width: 100%;" onclick="getIfnsByAddress()">
-                    Найти код
-                </button>
+                <button class="gen-btn" style="width: 100%;" onclick="getIfnsByAddress()">Найти код</button>
 
                 <div id="addressIfnsResult" style="margin-top: 10px; font-weight: bold; font-size: 13px;">
                     <span style="color: #888; font-weight: normal;">Введите адрес и нажмите поиск</span>
@@ -79,7 +104,12 @@
         </details>
 
         <details class="tool-section">
-            <summary>Генератор паролей</summary>
+            <summary>
+                <div class="summary-content">
+                    <span>Генератор паролей</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Иногда клиенты просят придумать за них пароль. Его можно сгенерировать здесь и сохранить к нему на рабочий стол</span></span>
+                </div>
+            </summary>
             <div style="padding-top:10px;">
                 <div class="gen-row">Длина: 
                     <select id="passLen">

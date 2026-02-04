@@ -113,7 +113,7 @@ async function getData() {
     const inn = innRaw.replace(/\D/g, '');
 
     errorBox.innerText = "";
-    resDivSfr.innerHTML = ""; // Сбрасываем старые запросы СФР
+    resDivSfr.innerHTML = ""; 
     document.getElementById('resTable').style.display = 'none';
     
     try {
@@ -153,13 +153,14 @@ async function getData() {
                 ["ИФНС Терр.", taxOfficeTerr],
             ];
             
-            // Генерируем таблицу
             let html = fields.map(f => `<tr><td>${f[0]}</td><td>${f[1] || "—"}</td></tr>`).join("");
             
-            // Добавляем строку СФР с кнопкой запроса
+            // Добавляем строку СФР с кнопкой и ТУЛТИПОМ
             html += `
                 <tr>
-                    <td>Код СФР</td>
+                    <td>Код СФР 
+                        <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Из-за протоколов безопасности сайта СФР данные запрашиваются через защищенный шлюз с вводом капчи. Для работы функции необходимо один раз установить на ПК локальный модуль (sfr_engine.exe). Модуль автоматически прописывается в автозагрузку, работает в фоновом режиме и не требует ручного запуска при каждом использовании сайта.</span></span>
+                    </td>
                     <td>
                         <strong id="sfrValue" style="color:#007bff;">Не указан</strong>
                         <button id="btnGetSfr" class="copy-btn" onclick="getSfrOnly()" style="margin-left:10px; padding:2px 8px; font-size:11px;">Запросить</button>
@@ -208,15 +209,15 @@ async function getSfrOnly() {
                     <p style="margin:0 0 10px 0;">Введите код с картинки:</p>
                     <img src="data:image/png;base64,${capData.image}" style="display:block; margin-bottom:10px; border:1px solid #eee;">
                     <input type="text" id="capAns" placeholder="Цифры" style="width:80px; padding:6px; border:1px solid #ccc;">
-                    <button class="primary-btn" id="btnConfirmCap" onclick="confirmSfrOnly('${inn}')" style="padding:6px 12px;">ОК</button>
+                    <button class="primary-btn" id="btnConfirmCap" onclick="confirmSfrOnly('${inn}')" style="padding:6px 12px; cursor:pointer;">ОК</button>
                 </div>
             `;
 
-            // Обработка Enter в поле капчи
-            document.getElementById('capAns').addEventListener('keypress', function(e) {
+            const capInput = document.getElementById('capAns');
+            capInput.focus();
+            capInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') confirmSfrOnly(inn);
             });
-            document.getElementById('capAns').focus();
 
         } else {
             resDiv.innerHTML = "❌ Ошибка: " + (capData.error || "неизвестно");
@@ -225,7 +226,7 @@ async function getSfrOnly() {
         resDiv.innerHTML = `
             <div style="background:#fff3cd; padding:15px; border:1px solid #ffeeba; color:#856404; border-radius:8px; margin-top:10px;">
                 <strong>Модуль СФР не запущен!</strong><br>
-                <a href="app/sfr_engine.exe" download style="display:inline-block; background:#d32f2f; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; margin-top:10px;">📥 Скачать установщик</a>
+                <a href="app/sfr_engine.exe" download style="display:inline-block; background:#d32f2f; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; margin-top:10px; font-weight:bold;">📥 Скачать sfr_engine.exe</a>
             </div>
         `;
     }
@@ -294,11 +295,9 @@ async function getIfnsByAddress() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initAll();
-    // Enter для поиска ИФНС
     document.getElementById('addressInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') getIfnsByAddress();
     });
-    // Enter для главного поиска ИНН
     document.getElementById('innInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') getData();
     });

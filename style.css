@@ -62,3 +62,78 @@ pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 5px; ov
     text-decoration: underline !important;
     cursor: pointer;
 }
+
+/* Контейнер подсказки */
+.tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+    margin-left: 4px; /* Расстояние стало еще меньше */
+    vertical-align: middle;
+}
+
+/* Значок вопроса */
+.tooltip-icon {
+    width: 15px;
+    height: 15px;
+    background-color: #d1d1d1;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    flex-shrink: 0; /* Чтобы иконка не сжималась */
+}
+
+/* Всплывающее окно */
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 260px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    
+    /* Позиционирование */
+    z-index: 99999; /* Максимальный приоритет */
+    top: 25px;      /* Появляется сразу под иконкой */
+    
+    /* Сдвигаем влево, чтобы не вылезало за правую границу колонки */
+    right: 0;       
+    
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: normal;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    pointer-events: none;
+    word-wrap: break-word; /* Чтобы длинные слова не ломали блок */
+}
+
+/* Треугольник (хвостик) */
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    right: 5px; /* Хвостик будет справа, над иконкой */
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #333 transparent;
+}
+
+/* Показ при наведении */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Устранение обрезки в колонках и деталях */
+.column, .tool-section, details {
+    overflow: visible !important; /* Разрешаем элементам выходить за границы */
+}
