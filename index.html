@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="config.js"></script>
     <script src="script.js" defer></script>
+
 </head>
 <body>
 
@@ -59,14 +60,14 @@
             <summary>
                 <div class="summary-content">
                     <span>Настройки ОФД</span>
-                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Содержит актуальные настройки ОФД для передачи данных при регистрации ККТ.</span></span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Актуальные настройки ОФД для регистрации ККТ.</span></span>
                 </div>
             </summary>
             <div style="padding: 10px 0;">
                 <div id="ofdLinksContainer" class="links-list" style="margin-bottom:10px;">Загрузка...</div>
                 
                 <div style="display: flex; align-items: center; justify-content: flex-start;">
-                    <button onclick="toggleAstral()" style="padding:8px; cursor:pointer; flex-grow: 1;">Показать данные Астрал Софт</button>
+                    <button onclick="toggleAstral()" style="padding:8px; cursor:pointer; flex-grow: 1;">ИНН компании, регистрирующей ККТ</button>
                     <span class="tooltip" style="margin-left: 8px;"><span class="tooltip-icon">?</span><span class="tooltiptext">Кнопка открывает расширенные данные (ИНН и Email сотрудников). Это важно для регистрации касс Атол на новых версиях драйверов, где требуется ввод данных сервисной организации.</span></span>
                 </div>
 
@@ -84,7 +85,7 @@
     <div class="column col-right">
         <h2>Доп инструменты</h2>
 
-        <details class="tool-section">
+	<details class="tool-section">
             <summary>
                 <div class="summary-content">
                     <span>ИФНС по адресу</span>
@@ -103,6 +104,7 @@
             </div>
         </details>
 
+
         <details class="tool-section">
             <summary>
                 <div class="summary-content">
@@ -113,18 +115,98 @@
             <div style="padding-top:10px;">
                 <div class="gen-row">Длина: 
                     <select id="passLen">
-                        <option value="6">6</option><option value="8" selected>8</option>
-                        <option value="12">12</option><option value="16">16</option><option value="20">20</option>
+                        <option value="8" selected>8</option>
+                        <option value="12">12</option>
                     </select>
                 </div>
                 <div class="gen-row"><input type="checkbox" id="genLower" checked> abc</div>
                 <div class="gen-row"><input type="checkbox" id="genUpper" checked> ABC</div>
                 <div class="gen-row"><input type="checkbox" id="genNum" checked> 123</div>
-                <div class="gen-row"><input type="checkbox" id="genSym"> !@#</div>
                 <button class="gen-btn" onclick="generatePass()">Создать пароль</button>
                 <div id="passResult" onclick="copyPass()">****</div>
             </div>
         </details>
+
+        <details class="tool-section">
+            <summary>
+                <div class="summary-content">
+                    <span>Шаблоны писем для отгрузки 1С</span>
+                    <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Подготовка письма для отправки через Thunderbird.</span></span>
+                </div>
+            </summary>
+            <div style="padding-top:10px;">
+                <button class="gen-btn" style="width: 100%;" onclick="openMailModal()">📧 Создать письмо</button>
+            </div>
+        </details>
+    </div>
+</div>
+
+<div id="mailModal" class="modal" style="display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background:#fff; margin:2% auto; padding:20px; width:480px; border-radius:8px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+        <div id="gatewayError" style="display:none; align-items:center; justify-content:center; gap:8px; background:#fff0f0; border:1px solid #ffcccc; padding:8px; border-radius:6px; margin-bottom:12px; color:#d93025; font-size:12px;">
+        <span style="font-weight:bold;">⚠️ Шлюз не запущен!</span>
+        <a href="app/gateway.exe" style="color:#1a73e8; text-decoration:underline;">Скачать шлюз <span class="tooltip"><span class="tooltip-icon">?</span><span class="tooltiptext">Шлюз необходим для передачи данных в Thunderbird и автоматического прикрепления инструкций. Без него отправка невозможна.</span></a>
+    
+         </div>
+        
+        <span onclick="closeMailModal()" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px;">&times;</span>
+        <h3 style="margin-top:0;">Подготовка отгрузки</h3>
+        
+        <div style="margin-bottom:12px;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Тип отгрузки:</label>
+            <select id="orderTypeSelect" style="width:100%; padding:6px;" onchange="applyTemplate()">
+                <option value="local">Отгрузка локальной 1С</option>
+                <option value="dop">Отгрузка доп лицензии 1С</option>
+                <option value="otrasl">Отгрузка КП отраслевого</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:12px;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Кому (Менеджер):</label>
+            <div style="display:flex; gap:5px; position: relative;">
+                <div style="flex-grow:1; position: relative;">
+                    <input type="text" id="managerSearch" placeholder="🔍 Найти менеджера..." 
+                           style="width:100%; padding:6px; font-size:12px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"
+                           oninput="filterManagers()" 
+                           onclick="showAllManagers()"
+                           onfocus="showAllManagers()"
+                           onkeydown="handleManagerKey(event)"
+                           autocomplete="off">
+                    <div id="managerDropdown" class="custom-dropdown" style="display:none;"></div>
+                </div>
+                <input type="text" id="mailTo" placeholder="Email" style="width:160px; padding:6px; font-size:12px;">
+            </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Организация:</label>
+            <input type="text" id="mailOrg" placeholder="Название компании" style="width:100%; padding:6px; box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:12px;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Наименование поставки 1С:</label>
+            <input type="text" id="mailDeliveryName" placeholder="Напр: 1С:Бухгалтерия 8. Базовая версия" style="width:100%; padding:6px; box-sizing:border-box;">
+        </div>
+
+        <div style="display: none;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Предпросмотр (HTML):</label>
+            <textarea id="mailBody" rows="6" style="width:100%; padding:8px; box-sizing:border-box; font-size:11px; background:#f4f4f4; border: 1px solid #ddd;" readonly></textarea>
+        </div>
+
+        <div style="margin-bottom:15px; border-top: 1px solid #eee; padding-top: 10px;">
+            <label style="font-size:11px; font-weight:bold; color: #555;">Вложения:</label>
+            <div id="defaultInstructionBox" style="background: #eef9ff; padding: 5px 10px; border-radius: 4px; border: 1px solid #cce5ff; font-size: 11px; margin-bottom: 8px; display: flex; align-items: center;">
+                <span style="margin-right: 10px;">📄</span> 
+                <span id="instructionFileName">Инструкция по установке (по умолчанию)</span>
+            </div>
+            <div id="dropZone" style="border: 2px dashed #bbb; padding: 15px; text-align: center; border-radius: 6px; background: #fafafa; cursor: pointer;">
+                <span id="dropZoneText" style="font-size: 11px; color: #777;">Перетащите <b>ZIP</b> и <b>PDF</b> сюда</span>
+                <div id="fileList" style="margin-top: 8px; font-size: 11px; color: #28a745;"></div>
+                <input type="file" id="fileLic" accept=".pdf,.zip" style="display:none;" multiple>
+            </div>
+        </div>
+        
+        <button class="primary-btn" style="width:100%; padding:12px; font-weight: bold;" onclick="sendMail()">Отправить в Thunderbird</button>
     </div>
 </div>
 

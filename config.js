@@ -3,3 +3,4 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS
 const OFD_CONFIG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqJ9p-dcqX0pAEGcyV5qDvNx9N2ui4yS9Jtl9SstbDsao4MYgfB-pRo9OkexoTUlBxUjIvVxsGDO4D/pub?gid=672914551&single=true&output=csv";
 const STAFF_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqJ9p-dcqX0pAEGcyV5qDvNx9N2ui4yS9Jtl9SstbDsao4MYgfB-pRo9OkexoTUlBxUjIvVxsGDO4D/pub?gid=1676966922&single=true&output=csv";
 const INSTRUCTIONS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqJ9p-dcqX0pAEGcyV5qDvNx9N2ui4yS9Jtl9SstbDsao4MYgfB-pRo9OkexoTUlBxUjIvVxsGDO4D/pub?gid=500341759&single=true&output=csv";
+const MANAGERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqJ9p-dcqX0pAEGcyV5qDvNx9N2ui4yS9Jtl9SstbDsao4MYgfB-pRo9OkexoTUlBxUjIvVxsGDO4D/pub?gid=1873991717&single=true&output=csv";
