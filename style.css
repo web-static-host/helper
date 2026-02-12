@@ -200,3 +200,16 @@ pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 5px; ov
 .dropdown-item:hover {
             background-color: #eef9ff;
         }
+
+        /* Стили для инструментов-ссылок (чтобы не было стрелки и вели себя как кнопки) */
+.link-tool summary::after {
+    content: '➔' !important; /* Символ перехода по ссылке вместо стрелки вниз */
+    font-size: 12px;
+}
+
+
+
+/* Убираем стандартное поведение раскрытия для этого конкретного блока */
+.link-tool[open] {
+    margin-bottom: 15px;
+}
