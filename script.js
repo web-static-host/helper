@@ -52,16 +52,23 @@ async function loadLinks(url, targetId) {
             if (cols.length < 2) return '';
             const name = cols[0].replace(/"/g, '').trim();
             const val = cols[1].replace(/"/g, '').trim();
+            const logoUrl = cols.length > 2 ? cols[2].replace(/"/g, '').trim() : '';
             const isDownloadable = val.includes('export=download');
 
             // --- ИЗМЕНЕНИЯ ТОЛЬКО ДЛЯ linksContainer (Часто используемые) ---
             if (targetId === 'linksContainer') {
-                return `<div class="link-item">
-                    <div class="link-info">
-                        <span class="link-name" style="font-weight:bold; color:#333; cursor:default; user-select:none;">${name}</span>
-                        <a href="${val}" target="_blank" class="link-url" style="font-size: 13px; color: #1a73e8; text-decoration: underline; display: block; margin-top: 2px;">${val}</a>
+                // ДОБАВЛЕНО: Формируем HTML для логотипа, если URL существует
+                const logoHtml = logoUrl ? `<img src="${logoUrl}" alt="logo" style="width: 24px; height: 24px; object-fit: contain; margin-right: 10px; border-radius: 4px; flex-shrink: 0;">` : '';
+
+                return `<div class="link-item" style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; flex-grow: 1; overflow: hidden;">
+                        ${logoHtml}
+                        <div class="link-info">
+                            <span class="link-name" style="font-weight:bold; color:#333; cursor:default; user-select:none;">${name}</span>
+                            <a href="${val}" target="_blank" class="link-url" style="font-size: 13px; color: #1a73e8; text-decoration: underline; display: block; margin-top: 2px;">${val}</a>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:5px;">
+                    <div style="display:flex; gap:5px; flex-shrink: 0;">
                         <button class="copy-btn" onclick="copyText('${val}', this)" title="Копировать">📋</button>
                     </div>
                 </div>`;
