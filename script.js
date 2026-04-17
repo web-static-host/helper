@@ -1,5 +1,33 @@
 const LOCAL_SERVER = 'http://127.0.0.1:5000';
+let okvedDb = {};
 
+// Функция для рекурсивного обхода вложенного JSON и вытаскивания кодов
+function flattenOkved(node) {
+    // Если это массив (например, корневой список или список items)
+    if (Array.isArray(node)) {
+        node.forEach(item => flattenOkved(item));
+    } 
+    // Если это объект с кодом и названием
+    else if (node && typeof node === 'object') {
+        if (node.code && node.name) {
+            okvedDb[node.code] = node.name; // Записываем в наш плоский словарь
+        }
+        // Если внутри есть вложенные пункты, проваливаемся в них
+        if (node.items) {
+            flattenOkved(node.items);
+        }
+    }
+}
+
+// Загружаем справочник из папки
+fetch('okved/okved.json')
+    .then(response => response.json())
+    .then(data => {
+        flattenOkved(data); // Превращаем дерево в плоский словарь
+    })
+    .catch(error => {
+        console.error('Не удалось загрузить okved.json. Проверь путь к файлу.', error);
+    });
 // Хранилище для объектов файлов
 let attachedFiles = {
     license: null,      // ZIP (Лицензия)
@@ -499,7 +527,7 @@ async function getData() {
                 ["Полное имя", d.name?.full_with_opf], 
                 ["Сокр. имя", d.name?.short_with_opf],
                 ["Адрес", fullAddress], 
-                ["ОКВЭД", d.okved],
+                ["ОКВЭД", d.okved ? `${d.okved} ${okvedDb[d.okved] || ''}`.trim() : "—"],
                 ["Руководитель", d.management?.name || result.suggestions[0].value],
                 ["ИФНС Терр.", taxOfficeTerr],
             ];
