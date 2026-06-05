@@ -742,26 +742,23 @@ async function downloadEgrul() {
     }
 }
 
-// --- БЛОК ПОДДЕРЖАНИЯ АКТИВНОСТИ (KEEP-ALIVE) ---
+// --- БЕСПЛАТНЫЙ ПОДДЕРЖИВАЮЩИЙ ПИНГ ---
 
-// Функция фонового пинга (чтобы канал до DaData не закрывался)
-function pingDaData() {
-    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": "Token " + API_KEY
-        },
-        body: JSON.stringify({ query: "1" }) // Микро-нагрузка
-    }).catch(() => { }); // Глушим любые ошибки, нам важен только сам факт стука
+function keepTcpAlive() {
+    // Стучимся просто на базовый адрес сервера DaData (без токенов, без POST, без базы)
+    // mode: 'no-cors' говорит браузеру: "Просто кинь пакет в ту сторону, ответ можешь даже не читать"
+    // cache: 'no-store' гарантирует, что браузер реально пойдет в сеть, а не достанет ответ из памяти
+    fetch("https://suggestions.dadata.ru/", { 
+        mode: 'no-cors', 
+        cache: 'no-store' 
+    }).catch(() => {});
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Делаем первый пробив при открытии интерфейса
-    pingDaData();
+    // Делаем первый пинг при загрузке
+    keepTcpAlive();
 
-    // 2. Запускаем вечный таймер: стучать каждые 3 минуты (180 000 миллисекунд)
-    // Это не даст антивирусу или роутеру "забыть" CORS-разрешение
-    setInterval(pingDaData, 45000);
+    // Запускаем вечный таймер каждые 45 секунд. 
+    // ЛИМИТ DADATA НЕ ТРАТИТСЯ (т.к. это не API запрос), но канал остается открытым!
+    setInterval(keepTcpAlive, 45000);
 });
