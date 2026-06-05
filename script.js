@@ -547,6 +547,17 @@ async function getData() {
                 </tr>
             `;
 
+            /* Добавляем строку Выписки ЕГРЮЛ
+            html += `
+                <tr>
+                    <td>Выписка из ЕГРЮЛ/ИП</td>
+                    <td>
+                        <button id="btnGetEgrul" class="copy-btn" onclick="downloadEgrul()" style="padding:4px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">Скачать PDF</button>
+                    </td>
+                </tr>
+            `; */
+                      
+
             body.innerHTML = html;
             document.getElementById('resTable').style.display = 'table';
             
@@ -680,4 +691,77 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('innInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') getData();
     });
+});
+
+async function downloadEgrul() {
+    const inn = document.getElementById('innInput').value.trim().replace(/\D/g, '');
+    const btn = document.getElementById('btnGetEgrul');
+    const originalText = btn.innerText;
+
+    if (!inn) return;
+
+    // Вставь сюда НОВУЮ ссылку, полученную после "Нового развертывания"
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwJHdyzA2ylA2HftImMO5P9OAJPmcoqUUZzvbjEr2-ksJoNbAqy3upCtehmDfMu095s/exec";
+
+    try {
+        btn.innerText = "Формирование...";
+        btn.disabled = true;
+
+        // Явно указываем метод GET и разрешаем следовать за редиректами
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?inn=${inn}`, {
+            method: 'GET',
+            redirect: 'follow'
+        });
+        
+        // Теперь мы ждем JSON, а не просто текст
+        const data = await response.json();
+
+        // Проверяем, есть ли в ответе ссылка
+        if (data.url) {
+            const link = document.createElement('a');
+            link.href = data.url;
+            link.download = `Выписка_${inn}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            btn.innerText = "Готово!";
+        } else if (data.error) {
+            // Если пришла ошибка из нашего скрипта
+            alert("Ошибка: " + data.error);
+            btn.innerText = "Ошибка";
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Не удалось связаться с сервером. Проверьте консоль.");
+        btn.innerText = "Ошибка";
+    } finally {
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }, 3000);
+    }
+}
+
+// --- БЛОК ПОДДЕРЖАНИЯ АКТИВНОСТИ (KEEP-ALIVE) ---
+
+// Функция фонового пинга (чтобы канал до DaData не закрывался)
+function pingDaData() {
+    fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Token " + API_KEY
+        },
+        body: JSON.stringify({ query: "1" }) // Микро-нагрузка
+    }).catch(() => { }); // Глушим любые ошибки, нам важен только сам факт стука
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Делаем первый пробив при открытии интерфейса
+    pingDaData();
+
+    // 2. Запускаем вечный таймер: стучать каждые 3 минуты (180 000 миллисекунд)
+    // Это не даст антивирусу или роутеру "забыть" CORS-разрешение
+    setInterval(pingDaData, 45000);
 });
